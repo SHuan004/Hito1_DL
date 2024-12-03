@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "name": "Juan Pérez",
+    "age": 45,
+    "rut": "12345678-9",
+    "symptoms": "Fiebre y dolor abdominal"
+  },
+  {
+    "id": 2,
+    "name": "María López",
+    "age": 30,
+    "rut": "98765432-1",
+    "symptoms": "Dificultad para respirar"
+  }
+]
