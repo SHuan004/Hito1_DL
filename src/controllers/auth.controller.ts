@@ -15,6 +15,20 @@ const login = (req: Request, res: Response): void => {
   }
 };
 
+const register = (req: Request, res: Response): void => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    res.status(400).json({ message: 'Faltan credenciales.' });
+    return;
+  }
+  if (AuthService.register(username, password)) {
+    res.json({ message: 'Usuario creado.' });
+  } else {
+    res.status(400).json({ message: 'El usuario ya existe.' });
+  }
+};
+
 export const AuthController = {
   login,
+  register,
 };

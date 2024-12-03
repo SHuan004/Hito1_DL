@@ -26,7 +26,24 @@ const findByUsername = (username: string): Staff | undefined => {
   return staff.find((s) => s.username === username);
 };
 
+const createStaff = (username: string, password: string): boolean => {
+  if (findByUsername(username)) {
+    return false;
+  }
+  const staff = getStaffData();
+  const newStaff = {
+    id: staff.length + 1,
+    username,
+    password,
+  };
+  staff.push(newStaff);
+  fs.writeFileSync(staffFile, JSON.stringify(staff, null, 2));
+
+  return true;
+};
+
 export const StaffModel = {
   getStaffData,
   findByUsername,
+  createStaff,
 };

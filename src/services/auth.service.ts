@@ -16,6 +16,15 @@ const login = (username: string, password: string): string | null => {
   return null;
 };
 
+const register = (username: string, password: string): boolean => {
+  if (StaffModel.createStaff(username, password)) {
+    return true;
+  }
+
+  return false;
+};
+
 export const AuthService = {
   login,
+  register,
 };
