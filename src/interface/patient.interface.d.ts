@@ -3,5 +3,4 @@ export interface Patient {
   name: string;
   age: number;
   rut: string;
-  symptoms: string;
 }
