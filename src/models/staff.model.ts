@@ -1,49 +1,84 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import { pool } from '../config/database';
+import bcrypt from 'bcryptjs';
 import { Staff } from '../interface/staff.interface';
 
-// Construir __dirname para ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Ruta al archivo staff.json
-const staffFile = path.join(__dirname, '../data/staff.json');
-
 /**
- * Obtiene todos los datos del staff desde el archivo JSON.
+ * Obtiene todos los datos del staff desde la base de datos.
  */
-const getStaffData = (): Staff[] => {
-  const data = fs.readFileSync(staffFile, 'utf8');
-  return JSON.parse(data) as Staff[];
+const getStaffData = async (): Promise<Staff[]> => {
+  const query = 'SELECT * FROM staff;';
+  const { rows } = await pool.query(query);
+  return rows as Staff[];
 };
 
 /**
  * Busca un miembro del staff por su nombre de usuario.
  */
-const findByUsername = (username: string): Staff | undefined => {
-  const staff = getStaffData();
-  return staff.find((s) => s.username === username);
+const findByUsername = async (username: string): Promise<Staff | null> => {
+  const query = 'SELECT * FROM staff WHERE username = $1;';
+  const values = [username];
+  const { rows } = await pool.query(query, values);
+  return rows[0] || null;
 };
 
-const createStaff = (username: string, password: string): boolean => {
-  if (findByUsername(username)) {
-    return false;
-  }
-  const staff = getStaffData();
-  const newStaff = {
-    id: staff.length + 1,
-    username,
-    password,
-  };
-  staff.push(newStaff);
-  fs.writeFileSync(staffFile, JSON.stringify(staff, null, 2));
+/**
+ * Busca un miembro del staff por su ID.
+ */
+const findById = async (id: number): Promise<Staff | null> => {
+  const query = 'SELECT * FROM staff WHERE id = $1;';
+  const values = [id];
+  const { rows } = await pool.query(query, values);
+  return rows[0] || null;
+};
 
-  return true;
+/**
+ * Crea un nuevo miembro del staff.
+ * @param username - Nombre de usuario.
+ * @param password - Contraseña (encriptada).
+ * @param role_id - ID del rol asociado al staff.
+ * @returns El miembro del staff recién creado.
+ */
+const createStaff = async (
+  username: string,
+  password: string,
+  role_id: number
+): Promise<Staff> => {
+  // Verificar si el usuario ya existe
+  const existingStaff = await findByUsername(username);
+  if (existingStaff) {
+    throw new Error('Username already exists'); // Lanza un error si el usuario ya existe
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  // Insertar el nuevo miembro del staff y devolver el registro completo
+  const query =
+    'INSERT INTO staff (username, password, role_id) VALUES ($1, $2, $3) RETURNING *;';
+  const values = [username, hashedPassword, role_id];
+  const { rows } = await pool.query(query, values);
+
+  if (rows.length === 0) {
+    throw new Error('Failed to insert staff into database');
+  }
+
+  return rows[0] as Staff; // Devuelve el nuevo miembro del staff
+};
+
+/**
+ * Elimina un miembro del staff por su ID.
+ */
+const deleteStaff = async (id: number): Promise<boolean> => {
+  const query = 'DELETE FROM staff WHERE id = $1;';
+  const values = [id];
+  const result = await pool.query(query, values);
+  return result.rowCount! > 0;
 };
 
 export const StaffModel = {
   getStaffData,
   findByUsername,
+  findById,
   createStaff,
+  deleteStaff,
 };
